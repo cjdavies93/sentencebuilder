@@ -47,8 +47,23 @@
     border-radius: 14px;
     padding: 32px 28px 28px;
   }
-  h1 { margin: 0 0 6px; font-size: 1.6rem; letter-spacing: -0.01em; }
-  p.intro { margin: 0 0 24px; color: var(--muted); line-height: 1.5; }
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 6px;
+  }
+  .score {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    color: var(--muted);
+  }
+  .score input { width: 64px; text-align: center; font-weight: 700; color: var(--ink); }
+  h1 { margin: 0; font-size: 1.6rem; letter-spacing: -0.01em; }
+  p.intro { margin: 0 0 24px;  color: var(--muted); line-height: 1.5; }
   .row {
     display: grid;
     grid-template-columns: 140px 1fr 40px;
@@ -103,7 +118,12 @@
 </head>
 <body>
 <main>
-  <h1>Word Picker</h1>
+  <header>
+    <h1>Word Picker</h1>
+    <label class="score">Score
+      <input type="text" id="score" value="0" readonly>
+    </label>
+  </header>
   <p class="intro">Select a button to pull a random word from its list.</p>
   <div id="rows"></div>
 </main>
@@ -133,6 +153,13 @@
     return word;
   }
 
+  const scoreField = document.getElementById("score");
+  let score = 0;
+  function changeScore(delta) {
+    score += delta;
+    scoreField.value = score;
+  }
+
   const container = document.getElementById("rows");
   LISTS.forEach(name => {
     const row = document.createElement("div");
@@ -150,11 +177,17 @@
     field.setAttribute("aria-labelledby", btn.id);
     field.setAttribute("aria-live", "polite");
 
+    let counted = false; // true while this field holds a word that has been scored
+
     btn.addEventListener("click", async () => {
       field.classList.remove("error");
       try {
         const words = await getList(name);
         field.value = pick(name, words);
+        if (!counted) {
+          counted = true;
+          changeScore(1);
+        }
       } catch (err) {
         field.classList.add("error");
         field.value = "Could not load " + name + ".json – serve this page from a web server";
@@ -168,6 +201,10 @@
     clear.setAttribute("aria-label", "Clear " + name);
     clear.title = "Clear";
     clear.addEventListener("click", () => {
+      if (counted) {
+        counted = false;
+        changeScore(-1);
+      }
       field.value = "";
       field.classList.remove("error");
     });
